@@ -3,6 +3,7 @@ package com.example.myscheduleapp.data
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.ForeignKey
+import androidx.room.Index
 
 
 @Entity(
@@ -10,14 +11,15 @@ import androidx.room.ForeignKey
     foreignKeys = [ForeignKey(
         entity = Schedule::class,
         parentColumns = ["id"],
-        childColumns = ["schedule_id"],
+        childColumns = ["scheduleId"],
         onDelete = ForeignKey.CASCADE
-    )]
+    )],
+    indices = [Index(value = ["scheduleId"])]
 )
 data class Task(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
-    val scheduledId: Long,
+    val scheduleId: Long,
     val startTime: String,
     val title: String
 )

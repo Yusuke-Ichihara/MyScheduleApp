@@ -3,6 +3,7 @@ package com.example.myscheduleapp.data
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow
 
+@Dao
 interface ScheduleDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
