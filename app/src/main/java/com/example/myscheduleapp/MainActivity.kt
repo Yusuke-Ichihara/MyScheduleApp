@@ -20,6 +20,8 @@ import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import com.example.myscheduleapp.ui.theme.MyScheduleAppTheme
 import com.example.myscheduleapp.ui.viewmodel.ScheduleViewModel
+import com.example.myscheduleapp.ui.screens.ScheduleListScreen
+import com.example.myscheduleapp.ui.screens.ScheduleDetailScreen
 import dagger.hilt.android.AndroidEntryPoint
 
 
@@ -46,7 +48,7 @@ fun AppNavigation(viewModel: ScheduleViewModel = hiltViewModel()) {
     NavHost(navController, startDestination = "scheduleList") {
         // 一覧画面
         composable("scheduleList") {
-            SimpleScheduleScreen(
+            ScheduleListScreen(
                 viewModel = viewModel,
                 onNavigateToDetail = { id ->
                     navController.navigate("detail/$id")
@@ -60,7 +62,7 @@ fun AppNavigation(viewModel: ScheduleViewModel = hiltViewModel()) {
         ){ backStackEntry ->
                 val id = backStackEntry.arguments?.getLong("scheduleId") ?: 0L
 
-                SimpleDetailScreen(
+                ScheduleDetailScreen(
                     scheduleId = id,
                     onBack = { navController.popBackStack() }
                 )
@@ -68,71 +70,5 @@ fun AppNavigation(viewModel: ScheduleViewModel = hiltViewModel()) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun SimpleScheduleScreen(
-    viewModel: ScheduleViewModel,
-    onNavigateToDetail: (Long) -> Unit
-) {
-    // 入力中のテキスト（JavaでのFormオブジェクトのようなもの）
-    var inputText by remember { mutableStateOf("") }
-    // データベースから取得したリスト（常に最新が流れてくる）
-    val schedules by viewModel.schedules.collectAsState(initial = emptyList())
 
-    Scaffold(
-        topBar = { TopAppBar(title = { Text("大人の時間割") }) }
-    ) { padding ->
-        Column(modifier = Modifier.padding(padding).padding(16.dp)) {
-            Row(modifier = Modifier.fillMaxWidth()) {
-                TextField(
-                    value = inputText,
-                    onValueChange = { inputText = it },
-                    modifier = Modifier.weight(1f),
-                    placeholder = { Text("スケジュール名を入力") }
-                )
-                Button(onClick = {
-                    if (inputText.isNotBlank()) {
-                        viewModel.addSchedule(inputText)
-                        inputText = ""
-                    }
-                }) { Text("追加") }
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            LazyColumn {
-                items(schedules) { schedule ->
-                    Card(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable { onNavigateToDetail(schedule.id) }
-                    ) {
-                        Text(schedule.name, modifier = Modifier.padding(16.dp))
-                    }
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun SimpleDetailScreen(scheduleId: Long, onBack: () -> Unit) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("詳細 (ID: $scheduleId)") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "戻る")
-                    }
-                }
-            )
-        }
-    ) { padding ->
-        Box(modifier = Modifier
-            .padding(padding)
-            .fillMaxSize()) {
-            Text("ここは ID: $scheduleId の詳細画面です。今後タスク入力を追加します。",
-                modifier = Modifier.padding(16.dp))
-        }
-    }
-}
