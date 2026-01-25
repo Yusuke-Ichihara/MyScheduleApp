@@ -12,6 +12,9 @@ interface ScheduleDao {
     @Query("SELECT * FROM schedules ORDER BY id DESC")
     fun getAllSchedules(): Flow<List<Schedule>>
 
+    @Update
+    suspend fun updateSchedule(schedule: Schedule)
+
     @Delete
     suspend fun deleteSchedule(schedule: Schedule)
 
@@ -20,6 +23,9 @@ interface ScheduleDao {
 
     @Query("SELECT * FROM tasks WHERE scheduleId = :scheduleId ORDER BY startTime")
     fun getTasksForSchedule(scheduleId: Long): Flow<List<Task>>
+
+    @Update
+    suspend fun updateTask(task: Task)
 
     @Delete
     suspend fun deleteTask(task: Task)

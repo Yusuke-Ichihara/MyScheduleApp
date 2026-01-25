@@ -4,8 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.myscheduleapp.data.Schedule
 import com.example.myscheduleapp.data.ScheduleDao
+import com.example.myscheduleapp.data.ScheduleRepository
 import com.example.myscheduleapp.data.Task
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -15,39 +17,48 @@ import javax.inject.Inject
 //Serviceクラス的な役割
 @HiltViewModel
 class ScheduleViewModel @Inject constructor(
-    private val dao: ScheduleDao
+    private val scheduleRepository: ScheduleRepository
 ) : ViewModel() {
 
-    val schedules: StateFlow<List<Schedule>> = dao.getAllSchedules()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    fun getTasks(scheduleId: Long): StateFlow<List<Task>> {
-        return dao.getTasksForSchedule(scheduleId)
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-    }
+    val schedules = scheduleRepository.allSchedules
 
     fun addSchedule(name: String) {
         viewModelScope.launch {
-            dao.insertSchedule(Schedule(name = name))
+            scheduleRepository.addSchedule(name)
         }
     }
 
-    fun addTask(scheduleId: Long, startTime: String, title: String) {
+    fun updateSchedule(schedule: Schedule) {
         viewModelScope.launch {
-            dao.insertTask(Task(scheduleId = scheduleId, startTime = startTime, title = title))
+            scheduleRepository.updateSchedule(schedule)
         }
     }
 
     fun deleteSchedule(schedule: Schedule) {
         viewModelScope.launch {
-            dao.deleteSchedule(schedule)
+            scheduleRepository.deleteSchedule(schedule)
+        }
+    }
+
+    fun getTasks(scheduleId: Long): Flow<List<Task>> {
+        return scheduleRepository.getTasks(scheduleId)
+    }
+
+    fun addTask(scheduleId: Long, startTime: String, title: String) {
+        viewModelScope.launch {
+            scheduleRepository.addTask(Task(scheduleId = scheduleId, startTime = startTime, title = title))
+        }
+    }
+
+    fun updateTask(task: Task) {
+        viewModelScope.launch {
+            scheduleRepository.updateTask(task)
         }
     }
 
     fun deleteTask(task: Task) {
         viewModelScope.launch {
-            dao.deleteTask(task)
+            scheduleRepository.deleteTask(task)
         }
     }
-
 }

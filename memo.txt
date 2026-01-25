@@ -1,0 +1,58 @@
+各ファイルの役割整理
+1.Data層
+・Schedule.kt / Task.kt
+    SpringでいうところのEntity
+    @Entityアノテーションを使い、DBのテーブル定義（フィールド名、主キー、外部キー）を定義
+・ScheduleDao.kt
+    Spring Data JPAの JpaRepository<Schedule, Long> と同じ
+・AppDatabase.kt
+    DBのバージョン管理や、どのEntityを含めるかを定義する設定ファイル
+    Springの application.properties や設定クラスでDB接続情報を書く作業に相当
+
+2.DI層
+・AppModule.kt
+    Springの @Configuration クラス
+    @Provides を付けたメソッドは、Springの @Bean
+    「ScheduleDaoが必要な時は、このdatabase.scheduleDao()を使ってインスタンスを生成してね」という設計図をHiltに教えている
+・MyApplication.kt
+    Hiltを使うための「起動スイッチ」
+
+3.Logic、Presentation層
+・ScheduleViewModel.kt
+    Springの @Service に近い役割だが、
+    Android特有の「画面の回転でデータが消えないように守る」というライフサイクル管理機能が追加されている
+・MainActivity.kt
+    Controller と View が合体したもの
+    UI（Composable関数）は、Javaでの HTMLテンプレート（Thymeleaf） のレンダリングに相当
+    ※レンダリング：データと見た目を合体させて、最終的な画面を作る工程
+
+ステップ別の詳細フロー
+① データベースからデータを取り出す（Room）
+まず、ScheduleDao が SQL（SELECT * FROM schedules）を発行。
+ここでのポイントは、戻り値が単なる List ではなく Flow<List<Schedule>> であること。
+Springとの違い: Spring（標準）は一度呼んだら終わりですが、Androidの Flow は 「DBの中身が変わるたびに、最新のリストを自動で流し続けてくれる土管」 のようなもの。
+
+② パーツを組み立てる（Hilt / DI）
+ここで AppModule の出番。
+Springが @Autowired するのと同様に、Hiltが「ViewModel を作るには DAO が必要だな」と判断し、AppModule のレシピ（@Provides）に従って Beanを注入。
+
+③ 画面用のデータとして保持する（ViewModel）
+ViewModel は、DAOから受け取った「土管（Flow）」を、画面が読み取れる 「状態（State）」 に変換。
+Springでのイメージ: Service が Repository からデータを取ってきて、Controller が Model に addAttribute する直前の状態。
+Androidの強み: ViewModel はスマホを横向きにしても破棄されないため、データが消えない。
+
+④ UIとして描き出す（Jetpack Compose）
+これが「Thymeleafのレンダリング」にあたる部分。
+MainActivity の Composable 関数が、ViewModel のデータを見て、「あ、予定が5件あるから、Cardを5個描画しよう」 と判断。
+レンダリングの正体： Spring（Thymeleaf）はサーバーで 「HTML文字列」 を作ってブラウザに返すが、
+Android（Compose）はスマホのGPUを使って、直接 「画面上の絵」 を描き直す。データ（State）が変わると、自動的にこの「描き直し」が走る仕組み。
+
+・初期の構造
+    View (MainActivity)：Controller + Thymeleafの役割。
+    ViewModel：Serviceの役割（ただしDAOを直接叩いている）。
+    DAO (Room)：JpaRepositoryの役割。
+・目指す「実務レベルの4層構造」
+    Entity: DBのテーブル定義（JPA Entity）。
+    DAO: 直接的なSQL実行（JpaRepository）。
+    Repository（新設）: 「データの窓口」。ViewModelに対して「どこからデータを取るか（DBかAPIか）」を隠蔽する層。
+    ViewModel: Repositoryからデータを受け取り、画面用の状態に整える（Service + StateHolder）。

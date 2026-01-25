@@ -62,4 +62,6 @@ dependencies {
             because("2.9.0 requires AGP 8.1.1+")
         }
     }
+
+    implementation(libs.androidx.navigation.compose)
 }
