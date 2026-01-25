@@ -28,6 +28,12 @@ class ScheduleViewModel @Inject constructor(
         }
     }
 
+    fun updateSchedule(schedule: Schedule) {
+        viewModelScope.launch {
+            scheduleRepository.updateSchedule(schedule)
+        }
+    }
+
     fun deleteSchedule(schedule: Schedule) {
         viewModelScope.launch {
             scheduleRepository.deleteSchedule(schedule)
@@ -41,6 +47,12 @@ class ScheduleViewModel @Inject constructor(
     fun addTask(scheduleId: Long, startTime: String, title: String) {
         viewModelScope.launch {
             scheduleRepository.addTask(Task(scheduleId = scheduleId, startTime = startTime, title = title))
+        }
+    }
+
+    fun updateTask(task: Task) {
+        viewModelScope.launch {
+            scheduleRepository.updateTask(task)
         }
     }
 

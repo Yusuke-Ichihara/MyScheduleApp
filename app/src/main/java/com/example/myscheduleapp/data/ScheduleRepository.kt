@@ -17,6 +17,10 @@ class ScheduleRepository @Inject constructor (
         scheduleDao.insertSchedule(Schedule(name = name))
     }
 
+    suspend fun updateSchedule(schedule: Schedule) {
+        scheduleDao.updateSchedule(schedule)
+    }
+
     suspend fun deleteSchedule(schedule: Schedule) {
         scheduleDao.deleteSchedule(schedule)
     }
@@ -27,6 +31,10 @@ class ScheduleRepository @Inject constructor (
 
     suspend fun addTask(task: Task) {
         scheduleDao.insertTask(task)
+    }
+
+    suspend fun updateTask(task: Task) {
+        scheduleDao.updateTask(task)
     }
 
     suspend fun deleteTask(task: Task) {
