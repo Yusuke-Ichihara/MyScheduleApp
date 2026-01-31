@@ -5,12 +5,15 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.* // ★一括インポートに整理（AlertDialog, TextButton等を含む）
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.myscheduleapp.data.Schedule // ★追加
 import com.example.myscheduleapp.ui.viewmodel.ScheduleViewModel
@@ -86,11 +89,14 @@ fun ScheduleListScreen(
 
             LazyColumn {
                 items(schedules) { schedule ->
-                    Card(
+                    ElevatedCard(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 4.dp)
-                            .combinedClickable (
+                            .padding(vertical = 6.dp),
+                        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp)
+                    ) {
+                        ListItem (
+                            modifier = Modifier.combinedClickable(
                                 onClick = {
                                     onNavigateToDetail(schedule.id)
                                 },
@@ -99,14 +105,45 @@ fun ScheduleListScreen(
                                     newScheduleName = schedule.name
                                     showEditDialog = true
                                 }
-                            )
-                    ) {
-                        Row (verticalAlignment = Alignment.CenterVertically) {
-                            Text(schedule.name, modifier = Modifier.padding(16.dp).weight(1f))
-                        IconButton(onClick = { viewModel.deleteSchedule(schedule) }) {
-                            Icon(Icons.Default.Delete, contentDescription = "削除")
-                        }
-                        }
+                            ),
+                            headlineContent = {
+                                Text(
+                                    text = schedule.name,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            },
+                            supportingContent = {
+                                Text(
+                                    "タップしてタスクを確認",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            },
+                            leadingContent = {
+                                Surface(
+                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                    shape = CircleShape,
+                                    modifier = Modifier.size(40.dp)
+                                ){
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = Icons.Default.DateRange,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                        )
+                                    }
+                                }
+                            },
+                            trailingContent = {
+                                IconButton(onClick = { viewModel.deleteSchedule(schedule) }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "削除",
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                }
+                            }
+                        )
                     }
                 }
             }
