@@ -65,29 +65,19 @@ fun ScheduleDetailScreen(
                     }
                 }
             )
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .padding(16.dp)
-        ) {
-            val containerColor = if (editingTask != null) {
-                MaterialTheme.colorScheme.primaryContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant
-            }
-
-            ElevatedCard (
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                colors = CardDefaults.elevatedCardColors(
-                    containerColor = containerColor
-                )
+        },
+        bottomBar = {
+            Surface(
+                tonalElevation = 3.dp,
+                shadowElevation = 8.dp,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    // 編集モード中であることを示すラベルとキャンセルボタン
+                Column(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .navigationBarsPadding()
+                        .imePadding()
+                ) {
                     if (editingTask != null) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -115,12 +105,12 @@ fun ScheduleDetailScreen(
                                     taskTime = ""
                                     taskTitle = ""
                                 }) {
-                                    Text(
-                                        text ="キャンセルして新規作成",
-                                        color = MaterialTheme.colorScheme.error,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
+                                Text(
+                                    text ="キャンセルして新規作成",
+                                    color = MaterialTheme.colorScheme.error,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
 
@@ -145,21 +135,22 @@ fun ScheduleDetailScreen(
                             onValueChange = { taskTitle = it },
                             label = { Text("やること") },
                             modifier = Modifier.weight(1f),
+                            singleLine = true,
                             placeholder = { Text("例: 掃除する") }
                         )
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     Button(
                         onClick = {
-                        if (editingTask == null) {
-                            viewModel.addTask(scheduleId, taskTime, taskTitle)
-                        } else {
-                            viewModel.updateTask(editingTask!!.copy(startTime = taskTime, title = taskTitle))
-                            editingTask = null
-                        }
+                            if (editingTask == null) {
+                                viewModel.addTask(scheduleId, taskTime, taskTitle)
+                            } else {
+                                viewModel.updateTask(editingTask!!.copy(startTime = taskTime, title = taskTitle))
+                                editingTask = null
+                            }
                             taskTime = ""
                             taskTitle = ""
-                    },
+                        },
                         modifier = Modifier.align(Alignment.End),
                         enabled = taskTime.isNotBlank() && taskTitle.isNotBlank()
                     ) {
@@ -167,21 +158,44 @@ fun ScheduleDetailScreen(
                     }
                 }
             }
-
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-            ) {
-                items(tasks) { task ->
-                    TaskTimelineItem(
-                        task = task,
-                        onEdit = {
-                            editingTask = task
-                            taskTime = task.startTime
-                            taskTitle = task.title
-                        },
-                        onDelete = { viewModel.deleteTask(task) }
+        }
+    ) { padding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+            val containerColor = if (editingTask != null) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant
+            }
+            if (tasks.isEmpty()) {
+                Box (
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text ="タスクがありません。下から追加しましょう！",
+                        color = MaterialTheme.colorScheme.outline
                     )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                ) {
+                    items(tasks) { task ->
+                        TaskTimelineItem(
+                            task = task,
+                            onEdit = {
+                                editingTask = task
+                                taskTime = task.startTime
+                                taskTitle = task.title
+                            },
+                            onDelete = { viewModel.deleteTask(task) }
+                        )
+                    }
                 }
             }
         }
