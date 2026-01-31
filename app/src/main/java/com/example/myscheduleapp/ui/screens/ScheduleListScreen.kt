@@ -6,14 +6,19 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.EditCalendar
 import androidx.compose.material3.* // ★一括インポートに整理（AlertDialog, TextButton等を含む）
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.*
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.myscheduleapp.data.Schedule // ★追加
 import com.example.myscheduleapp.ui.viewmodel.ScheduleViewModel
@@ -67,83 +72,136 @@ fun ScheduleListScreen(
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("大人の時間割") }) }
-    ) { padding ->
-        Column(modifier = Modifier.padding(padding).padding(16.dp)) {
-            Row(modifier = Modifier.fillMaxWidth()) {
-                TextField(
-                    value = inputText,
-                    onValueChange = { inputText = it },
-                    modifier = Modifier.weight(1f),
-                    placeholder = { Text("スケジュール名を入力") }
-                )
-                Button(onClick = {
-                    if (inputText.isNotBlank()) {
-                        viewModel.addSchedule(inputText)
-                        inputText = ""
-                    }
-                }) { Text("追加") }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            LazyColumn {
-                items(schedules) { schedule ->
-                    ElevatedCard(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 6.dp),
-                        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp)
-                    ) {
-                        ListItem (
-                            modifier = Modifier.combinedClickable(
-                                onClick = {
-                                    onNavigateToDetail(schedule.id)
-                                },
-                                onLongClick = {
-                                    editingSchedule = schedule
-                                    newScheduleName = schedule.name
-                                    showEditDialog = true
-                                }
-                            ),
-                            headlineContent = {
-                                Text(
-                                    text = schedule.name,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            },
-                            supportingContent = {
-                                Text(
-                                    "タップしてタスクを確認",
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                            },
-                            leadingContent = {
-                                Surface(
-                                    color = MaterialTheme.colorScheme.primaryContainer,
-                                    shape = CircleShape,
-                                    modifier = Modifier.size(40.dp)
-                                ){
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Icon(
-                                            imageVector = Icons.Default.DateRange,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.onPrimaryContainer
-                                        )
-                                    }
-                                }
-                            },
-                            trailingContent = {
-                                IconButton(onClick = { viewModel.deleteSchedule(schedule) }) {
-                                    Icon(
-                                        imageVector = Icons.Default.Delete,
-                                        contentDescription = "削除",
-                                        tint = MaterialTheme.colorScheme.error
-                                    )
+        topBar = { TopAppBar(title = { Text("大人の時間割") }) },
+        bottomBar = {
+            Surface(
+                tonalElevation = 10.dp,
+                shadowElevation = 10.dp,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .navigationBarsPadding() //OSのナビバーに被らないようにする
+                        .imePadding(), //キーボードが出たときに自動で押し上げる
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                        value = inputText,
+                        onValueChange = { inputText = it },
+                        modifier = Modifier.weight(1f),
+                        placeholder = { Text("スケジュールパターンを入力") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(
+                            onDone = {
+                                if (inputText.isNotBlank()) {
+                                    viewModel.addSchedule(inputText)
+                                    inputText = ""
                                 }
                             }
                         )
+
+                    )
+                    Button(onClick = {
+                        if (inputText.isNotBlank()) {
+                            viewModel.addSchedule(inputText)
+                            inputText = ""
+                        }
+                    }) { Text("追加") }
+                }
+            }
+        }
+    ) { padding ->
+        Box (
+            modifier = Modifier.fillMaxSize().padding(padding),
+            contentAlignment = Alignment.TopCenter
+        ){
+            if (schedules.isEmpty()) {
+                Column (
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier.padding(32.dp)
+                ){
+                    Icon(
+                        imageVector = Icons.Default.EditCalendar,
+                        contentDescription = null,
+                        modifier = Modifier.size(100.dp),
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "まだスケジュールが登録されていません",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "スケジュールを作成しましょう",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        textAlign = TextAlign.Center
+                    )
+                }
+            } else {
+                LazyColumn {
+                    items(schedules) { schedule ->
+                        ElevatedCard(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 6.dp),
+                            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp)
+                        ) {
+                            ListItem (
+                                modifier = Modifier.combinedClickable(
+                                    onClick = {
+                                        onNavigateToDetail(schedule.id)
+                                    },
+                                    onLongClick = {
+                                        editingSchedule = schedule
+                                        newScheduleName = schedule.name
+                                        showEditDialog = true
+                                    }
+                                ),
+                                headlineContent = {
+                                    Text(
+                                        text = schedule.name,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                },
+                                supportingContent = {
+                                    Text(
+                                        "タップしてタスクを確認",
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                },
+                                leadingContent = {
+                                    Surface(
+                                        color = MaterialTheme.colorScheme.primaryContainer,
+                                        shape = CircleShape,
+                                        modifier = Modifier.size(40.dp)
+                                    ){
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Icon(
+                                                imageVector = Icons.Default.DateRange,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                            )
+                                        }
+                                    }
+                                },
+                                trailingContent = {
+                                    IconButton(onClick = { viewModel.deleteSchedule(schedule) }) {
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = "削除",
+                                            tint = MaterialTheme.colorScheme.error
+                                        )
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
             }
