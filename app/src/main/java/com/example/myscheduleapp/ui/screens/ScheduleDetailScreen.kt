@@ -1,5 +1,6 @@
 package com.example.myscheduleapp.ui.screens
 
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -30,6 +31,8 @@ import androidx.compose.ui.unit.sp
 import java.util.Locale
 import com.example.myscheduleapp.ui.viewmodel.ScheduleViewModel
 import com.example.myscheduleapp.data.Task
+import java.time.LocalTime
+import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -234,6 +237,7 @@ fun TaskTimelineItem(
 ) {
     val timelineColor = MaterialTheme.colorScheme.primary
     val cardColors = getCardColorsByTime(task.startTime)
+    val isNow = isCurrentTask(task.startTime)
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -257,8 +261,8 @@ fun TaskTimelineItem(
             }
             Box(
                 modifier = Modifier
-                    .size(12.dp)
-                    .background(timelineColor, CircleShape)
+                    .size(if (isNow) 16.dp else 12.dp)
+                    .background(if (isNow) timelineColor else timelineColor, CircleShape)
                     .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape)
             )
             //下に向かう線
@@ -278,15 +282,34 @@ fun TaskTimelineItem(
             onClick = onEdit,
             modifier = Modifier
                 .weight(1f)
-                .padding(start = 8.dp, bottom = 16.dp),
+                .padding(start = 8.dp, bottom = 16.dp)
+                .then(
+                    if (isNow) {
+                        Modifier.border(
+                            width = 3.dp,
+                            color = timelineColor,
+                            shape = CardDefaults.shape
+                        )
+                    } else {
+                        Modifier
+                    }
+                ),
             colors = cardColors,
-            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 0.dp)
+            elevation = CardDefaults.elevatedCardElevation(
+                defaultElevation = if (isNow) 12.dp else 0.dp
+            )
         ) {
             Row(
                 modifier = Modifier.padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
+//                    Text(
+//                        text = "DEBUG: isNow=$isNow / Time=${Calendar.getInstance().get(Calendar.HOUR_OF_DAY)}:${Calendar.getInstance().get(Calendar.MINUTE)}",
+//                        color = Color.Red,
+//                        fontSize = 10.sp
+//                    )
+
                     //時刻表示（少し控えめ）
                     Text(
                         text = task.startTime,
@@ -342,4 +365,25 @@ fun getCardColorsByTime(startTime: String): CardColors {
             )
         }
     }
+}
+
+fun isCurrentTask(startTime: String): Boolean {
+    val now = Calendar.getInstance()
+    val currentHour = now.get(Calendar.HOUR_OF_DAY)
+    val currentMinute = now.get(Calendar.MINUTE)
+
+    val parts = startTime.split(":")
+    if (parts.size != 2) return false
+
+    val startHour = parts[0].toIntOrNull() ?: return false
+    val startMin = parts[1].toIntOrNull() ?: return false
+
+    val nowInMinutes = currentHour * 60 + currentMinute
+    val startInMinutes = startHour * 60 + startMin
+    val endInMinutes = startInMinutes + 60
+
+    val result = nowInMinutes in startInMinutes..<endInMinutes
+    Log.d("DEBUG_TIME", "Task: $startTime, Now: $currentHour:$currentMinute, Result: $result")
+
+    return result
 }
