@@ -9,7 +9,7 @@ interface ScheduleDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSchedule(schedule: Schedule): Long
 
-    @Query("SELECT * FROM schedules ORDER BY id DESC")
+    @Query("SELECT * FROM schedules ORDER BY id ASC")
     fun getAllSchedules(): Flow<List<Schedule>>
 
     @Update

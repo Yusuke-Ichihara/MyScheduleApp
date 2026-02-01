@@ -20,7 +20,7 @@ class ScheduleViewModel @Inject constructor(
     private val scheduleRepository: ScheduleRepository
 ) : ViewModel() {
 
-    val schedules = scheduleRepository.allSchedules
+    val allSchedules = scheduleRepository.allSchedules
 
     fun addSchedule(name: String) {
         viewModelScope.launch {
