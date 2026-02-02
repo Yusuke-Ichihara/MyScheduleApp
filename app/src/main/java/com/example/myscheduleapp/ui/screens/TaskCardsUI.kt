@@ -30,6 +30,19 @@ fun TaskTimelineItem(
     val timelineColor = MaterialTheme.colorScheme.primary
     val cardColors = getCardColorsByTime(task.startTime)
     val isNow = isCurrentTask(task.startTime)
+    // 時間を分に変換して差分を出す
+    val startMin = timeToMinutes(task.startTime)
+    val endMin = timeToMinutes(task.endTime).let {
+        // 終了時間が未設定、もしくは開始時間より前の場合は60分として扱う
+        if (it <= startMin) startMin + 60 else it
+    }
+    val duration = endMin - startMin
+
+    // 縦幅：0.35dp/minute
+    val scale = 0.35f
+    // 縦幅：最低でも70dpは確保
+    val calculatedHeight = (duration * scale).coerceAtLeast(90f).dp
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -38,7 +51,9 @@ fun TaskTimelineItem(
         //左側（線と点）
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.width(40.dp)
+            modifier = Modifier
+                .width(40.dp)
+                .fillMaxHeight()
         ) {
             //上に向かう線
             if (!isFirst) {
@@ -75,6 +90,7 @@ fun TaskTimelineItem(
             modifier = Modifier
                 .weight(1f)
                 .padding(start = 8.dp, bottom = 16.dp)
+                .height(calculatedHeight)
                 .then(
                     if (isNow) {
                         Modifier.border(
@@ -105,7 +121,7 @@ fun TaskTimelineItem(
 
                     //時刻表示（少し控えめ）
                     Text(
-                        text = task.startTime,
+                        text = task.startTime + " ~ " + task.endTime,
                         style = MaterialTheme.typography.headlineSmall,
                         color = cardColors.contentColor.copy(alpha = 1f),
                         fontFamily = FontFamily.Monospace,
@@ -118,7 +134,8 @@ fun TaskTimelineItem(
                         text = task.title,
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
+                        maxLines = if (duration < 45) 1 else 3
                     )
                 }
                 IconButton(onClick = onDelete) {
@@ -185,4 +202,17 @@ fun isCurrentTask(startTime: String): Boolean {
     Log.d("DEBUG_TIME", "Task: $startTime, Now: $currentHour:$currentMinute, Result: $result")
 
     return result
+}
+
+// "hh:mm" 形式の文字列を（分）に変換する関数
+fun timeToMinutes(timeStr: String): Int {
+    if (timeStr.isBlank()) return 0
+    return try {
+        val parts = timeStr.split(":")
+        val hours = parts[0].toInt()
+        val minutes = parts[1].toInt()
+        hours * 60 + minutes
+    } catch (e: Exception) {
+        0
+    }
 }

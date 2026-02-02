@@ -7,6 +7,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -174,34 +175,45 @@ fun TaskListSection(scheduleId: Long, viewModel: ScheduleViewModel) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskInputSection(scheduleId: Long, viewModel: ScheduleViewModel) {
-    var taskTime by remember { mutableStateOf("") }
+    var taskStartTime by remember { mutableStateOf("") }
+    var taskEndTime by remember { mutableStateOf("") }
     var taskTitle by remember { mutableStateOf("") }
-    var showTimePicker by remember { mutableStateOf(false) }
-    val timePickerState = rememberTimePickerState(is24Hour = true)
 
-    if (showTimePicker) {
-        AlertDialog(
-            onDismissRequest = { showTimePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    taskTime = String.format(Locale.getDefault(), "%02d:%02d", timePickerState.hour, timePickerState.minute)
-                    showTimePicker = false
-                }) { Text("OK") }
+    // どの時間を編集しているかを管理するフラグ
+    var pickingTimeType by remember { mutableStateOf<String?>(null) }
+
+    if (pickingTimeType != null) {
+        TimeListPickerDialog(
+            initialTime = if (pickingTimeType == "start") taskStartTime else taskEndTime,
+            onTimeSelected = { selectedTime ->
+                if (pickingTimeType == "start") taskStartTime = selectedTime
+                else taskEndTime = selectedTime
+                pickingTimeType = null
             },
-            text = { TimePicker(state = timePickerState) }
+            onDismiss = { pickingTimeType = null }
         )
     }
 
     Surface(tonalElevation = 3.dp, shadowElevation = 8.dp) {
         Column(modifier = Modifier.padding(16.dp).navigationBarsPadding().imePadding()) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                //開始時間
                 TextField(
-                    value = taskTime,
+                    value = taskStartTime,
                     onValueChange = {},
                     label = { Text("時間") },
-                    modifier = Modifier.weight(0.4f).clickable { showTimePicker = true },
+                    modifier = Modifier.weight(0.4f).clickable { pickingTimeType = "start" },
                     enabled = false,
-                    leadingIcon = { Icon(Icons.Default.Schedule, null) }
+                    colors = TextFieldDefaults.colors(disabledTextColor = MaterialTheme.colorScheme.onSurface)
+                )
+                //終了時間
+                TextField(
+                    value = taskEndTime,
+                    onValueChange = {},
+                    label = { Text("終了") },
+                    modifier = Modifier.weight(0.4f).clickable { pickingTimeType = "end" },
+                    enabled = false,
+                    colors = TextFieldDefaults.colors(disabledTextColor = MaterialTheme.colorScheme.onSurface)
                 )
                 TextField(
                     value = taskTitle,
@@ -211,22 +223,24 @@ fun TaskInputSection(scheduleId: Long, viewModel: ScheduleViewModel) {
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(onDone = {
-                        if (taskTime.isNotBlank() && taskTitle.isNotBlank()) {
-                            viewModel.addTask(scheduleId, taskTime, taskTitle)
+                        if (taskStartTime.isNotBlank() && taskTitle.isNotBlank()) {
+                            viewModel.addTask(scheduleId, taskStartTime, taskEndTime, taskTitle)
                             taskTitle = ""
-                            taskTime = ""
+                            taskStartTime = ""
+                            taskEndTime = ""
                         }
                     })
                 )
             }
             Button(
                 onClick = {
-                    viewModel.addTask(scheduleId, taskTime, taskTitle)
-                    taskTime = ""
+                    viewModel.addTask(scheduleId, taskStartTime, taskEndTime, taskTitle)
+                    taskStartTime = ""
+                    taskEndTime = ""
                     taskTitle = ""
                 },
                 modifier = Modifier.align(Alignment.End).padding(top = 8.dp),
-                enabled = taskTime.isNotBlank() && taskTitle.isNotBlank()
+                enabled = taskStartTime.isNotBlank() && taskTitle.isNotBlank()
             ) {
                 Text("タスク追加")
             }
@@ -265,4 +279,113 @@ fun AutoResizingText(
             }
         }
     )
+}
+
+@Composable
+fun TimeListPickerDialog(
+    initialTime: String,
+    onTimeSelected: (String) -> Unit,
+    onDismiss: () -> Unit
+){
+    val parts = initialTime.split(":")
+    var selectedHour by remember { mutableIntStateOf(parts.getOrNull(0)?.toIntOrNull() ?: 0) }
+    var selectedMinute by remember { mutableIntStateOf(parts.getOrNull(1)?.toIntOrNull() ?: 0) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = {
+                // %：ここに変数を入れる合図
+                // 0：桁が足りない場合は0で埋める
+                // 2：最低でも2桁の幅を確保
+                // d：流し込むデータは整数
+                val formattedTime = String.format(Locale.getDefault(), "%02d:%02d", selectedHour, selectedMinute)
+                onTimeSelected(formattedTime)
+            })
+            {
+                Text("OK")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss
+            ){
+                Text("キャンセル")
+            }
+        },
+        title = {
+            Text("時間を設定")
+        },
+        text = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                //"時"用にパラメータを渡す
+                NumberPickerList(
+                    range = 0..29,
+                    selectedValue = selectedHour,
+                    onValueChange = { selectedHour = it },
+                    label = "時"
+                )
+                Text(
+                    text = ":",
+                    style = MaterialTheme.typography.headlineMedium
+                )
+                //"分"用にパラメータを渡す
+                NumberPickerList(
+                    range = 0..59,
+                    selectedValue = selectedMinute,
+                    onValueChange = { selectedMinute = it },
+                    label = "分"
+                )
+            }
+        }
+    )
+}
+
+@Composable
+fun NumberPickerList(
+    range: IntRange, //選択可能な時間の範囲
+    selectedValue: Int, // 現在選択されている値
+    onValueChange: (Int) -> Unit, //値が選ばれたときに親に通知するイベント（コールバック）
+    label: String // "時"、"分"
+){
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelSmall
+        )
+        LazyColumn(
+            modifier = Modifier
+                .width(64.dp)
+                .border(1.dp,Color.LightGray.copy(alpha = 0.3f))
+        ){
+            // range（0..28）をリストの各項目としてループ処理
+            items(range.toList()){ value ->
+                // 現在の項目が「選択されているか」を判定
+                val isSelected = value == selectedValue
+                // 各数字の表示
+                Text(
+                    text = String.format(Locale.getDefault(), "%02d", value),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onValueChange(value) } // タップされたら親の関数を呼び出す
+                        .background(
+                            if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                            else Color.Transparent
+                        )
+                        .padding(8.dp),
+                    textAlign = TextAlign.Center,
+                    style = if (isSelected) MaterialTheme.typography.titleLarge
+                            else MaterialTheme.typography.bodyLarge,
+                    color = if (isSelected) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
+    }
 }

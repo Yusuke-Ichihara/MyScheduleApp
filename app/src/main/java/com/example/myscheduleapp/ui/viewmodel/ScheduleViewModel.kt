@@ -44,9 +44,9 @@ class ScheduleViewModel @Inject constructor(
         return scheduleRepository.getTasks(scheduleId)
     }
 
-    fun addTask(scheduleId: Long, startTime: String, title: String) {
+    fun addTask(scheduleId: Long, startTime: String, endTime : String, title: String) {
         viewModelScope.launch {
-            scheduleRepository.addTask(Task(scheduleId = scheduleId, startTime = startTime, title = title))
+            scheduleRepository.addTask(Task(scheduleId = scheduleId, startTime = startTime, endTime = endTime, title = title))
         }
     }
 
