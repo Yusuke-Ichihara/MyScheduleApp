@@ -40,5 +40,4 @@ class ScheduleRepository @Inject constructor (
     suspend fun deleteTask(task: Task) {
         scheduleDao.deleteTask(task)
     }
-
 }

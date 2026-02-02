@@ -5,16 +5,16 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavType
+import androidx.hilt.navigation.compose.*
 import androidx.navigation.compose.*
-import androidx.navigation.navArgument
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.example.myscheduleapp.ui.screens.ScheduleListScreen
 import com.example.myscheduleapp.ui.theme.MyScheduleAppTheme
 import com.example.myscheduleapp.ui.viewmodel.ScheduleViewModel
-import com.example.myscheduleapp.ui.screens.ScheduleListScreen
-import com.example.myscheduleapp.ui.screens.ScheduleDetailScreen
+import com.example.myscheduleapp.ui.screens.SchedulePagerScreen
 import dagger.hilt.android.AndroidEntryPoint
 
 
@@ -38,31 +38,18 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavigation(viewModel: ScheduleViewModel = hiltViewModel()) {
     val navController = rememberNavController()
-    NavHost(navController, startDestination = "scheduleList") {
-        // 一覧画面
-        composable("scheduleList") {
-            ScheduleListScreen(
+    NavHost(navController = navController, startDestination = "pager") {
+        composable("pager") {
+            SchedulePagerScreen(
                 viewModel = viewModel,
-                onNavigateToDetail = { id ->
-                    navController.navigate("detail/$id")
-                }
+                onNavigateToManage = { navController.navigate("manage") }
             )
         }
-        // 詳細画面
-        composable(
-            route = "detail/{scheduleId}",
-            arguments = listOf(navArgument("scheduleId") { type = NavType.LongType })
-        ){ backStackEntry ->
-                val id = backStackEntry.arguments?.getLong("scheduleId") ?: 0L
-
-                ScheduleDetailScreen(
-                    scheduleId = id,
-                    onBack = { navController.popBackStack() },
-                    viewModel = viewModel
-                )
+        composable("manage") {
+            ScheduleListScreen(
+                viewModel = viewModel,
+                onBack = { navController.popBackStack() }
+            )
         }
     }
 }
-
-
-

@@ -21,5 +21,6 @@ data class Task(
     val id: Long = 0,
     val scheduleId: Long,
     val startTime: String,
+    val endTime: String,
     val title: String
 )

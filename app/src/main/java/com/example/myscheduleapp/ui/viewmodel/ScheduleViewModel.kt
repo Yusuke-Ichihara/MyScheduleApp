@@ -1,15 +1,18 @@
 package com.example.myscheduleapp.ui.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.myscheduleapp.data.Schedule
 import com.example.myscheduleapp.data.ScheduleDao
 import com.example.myscheduleapp.data.ScheduleRepository
 import com.example.myscheduleapp.data.Task
+import com.example.myscheduleapp.ui.screens.timeToMinutes
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -20,7 +23,7 @@ class ScheduleViewModel @Inject constructor(
     private val scheduleRepository: ScheduleRepository
 ) : ViewModel() {
 
-    val schedules = scheduleRepository.allSchedules
+    val allSchedules = scheduleRepository.allSchedules
 
     fun addSchedule(name: String) {
         viewModelScope.launch {
@@ -44,9 +47,35 @@ class ScheduleViewModel @Inject constructor(
         return scheduleRepository.getTasks(scheduleId)
     }
 
-    fun addTask(scheduleId: Long, startTime: String, title: String) {
+    fun addTask(scheduleId: Long, startTime: String, endTime : String, title: String) {
+        // 開始と終了が空なら何もしない
+        if (startTime.isBlank() || endTime.isBlank()) return
+
         viewModelScope.launch {
-            scheduleRepository.addTask(Task(scheduleId = scheduleId, startTime = startTime, title = title))
+            //.first()でFlowの値を取得しList型の変数へ代入
+            val currentTasks: List<Task> = scheduleRepository.getTasks(scheduleId).first()
+
+            val newStart = timeToMinutes(startTime)
+            val newEnd = timeToMinutes(endTime)
+
+            // 開始が終了より後の場合は登録拒否
+            if (newStart >= newEnd) {
+                Log.e("Validation", "終了時間は開始時間より後にしてください")
+                return@launch
+            }
+
+            val isOverlap = currentTasks.any { existing ->
+                val exStart = timeToMinutes(existing.startTime)
+                val exEnd = timeToMinutes(existing.endTime)
+                newStart < exEnd && exStart < newEnd
+            }
+
+            if (isOverlap) {
+                Log.e("Validation", "時間が被っています")
+                return@launch
+            } else {
+                scheduleRepository.addTask(Task(scheduleId = scheduleId, startTime = startTime, endTime = endTime, title = title))
+            }
         }
     }
 
