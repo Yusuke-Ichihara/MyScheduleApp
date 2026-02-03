@@ -38,8 +38,8 @@ fun TaskTimelineItem(
     }
     val duration = endMin - startMin
 
-    // 縦幅：0.35dp/minute
-    val scale = 0.35f
+    // 縦幅：0.5dp/minute
+    val scale = 0.5f
     // 縦幅：最低でも70dpは確保
     val calculatedHeight = (duration * scale).coerceAtLeast(90f).dp
 
