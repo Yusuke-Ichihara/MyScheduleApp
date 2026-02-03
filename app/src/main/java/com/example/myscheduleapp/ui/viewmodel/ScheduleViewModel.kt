@@ -1,6 +1,7 @@
 package com.example.myscheduleapp.ui.viewmodel
 
 import android.util.Log
+import androidx.compose.runtime.getValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.myscheduleapp.data.Schedule
@@ -16,6 +17,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 
 //Serviceクラス的な役割
 @HiltViewModel
@@ -24,6 +27,8 @@ class ScheduleViewModel @Inject constructor(
 ) : ViewModel() {
 
     val allSchedules = scheduleRepository.allSchedules
+    var taskErrorMessage by mutableStateOf<String?>(null)
+        private set
 
     fun addSchedule(name: String) {
         viewModelScope.launch {
@@ -51,6 +56,8 @@ class ScheduleViewModel @Inject constructor(
         // 開始と終了が空なら何もしない
         if (startTime.isBlank() || endTime.isBlank()) return
 
+        taskErrorMessage = null
+
         viewModelScope.launch {
             //.first()でFlowの値を取得しList型の変数へ代入
             val currentTasks: List<Task> = scheduleRepository.getTasks(scheduleId).first()
@@ -59,8 +66,8 @@ class ScheduleViewModel @Inject constructor(
             val newEnd = timeToMinutes(endTime)
 
             // 開始が終了より後の場合は登録拒否
-            if (newStart >= newEnd) {
-                Log.e("Validation", "終了時間は開始時間より後にしてください")
+            if (newStart > newEnd) {
+                taskErrorMessage = "終了時間は開始時間より後にしてください"
                 return@launch
             }
 
@@ -71,10 +78,11 @@ class ScheduleViewModel @Inject constructor(
             }
 
             if (isOverlap) {
-                Log.e("Validation", "時間が被っています")
+                taskErrorMessage = "時間が被っています"
                 return@launch
             } else {
                 scheduleRepository.addTask(Task(scheduleId = scheduleId, startTime = startTime, endTime = endTime, title = title))
+                taskErrorMessage = null
             }
         }
     }
@@ -89,5 +97,9 @@ class ScheduleViewModel @Inject constructor(
         viewModelScope.launch {
             scheduleRepository.deleteTask(task)
         }
+    }
+
+    fun clearTaskError() {
+        taskErrorMessage = null
     }
 }

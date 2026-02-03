@@ -178,6 +178,8 @@ fun TaskInputSection(scheduleId: Long, viewModel: ScheduleViewModel) {
     var taskStartTime by remember { mutableStateOf("") }
     var taskEndTime by remember { mutableStateOf("") }
     var taskTitle by remember { mutableStateOf("") }
+    // ViewModelからエラーメッセージを取得
+    val errorMessage = viewModel.taskErrorMessage
 
     // どの時間を編集しているかを管理するフラグ
     var pickingTimeType by remember { mutableStateOf<String?>(null) }
@@ -196,13 +198,25 @@ fun TaskInputSection(scheduleId: Long, viewModel: ScheduleViewModel) {
 
     Surface(tonalElevation = 3.dp, shadowElevation = 8.dp) {
         Column(modifier = Modifier.padding(16.dp).navigationBarsPadding().imePadding()) {
+            if (errorMessage != null) {
+                Text(
+                    text = errorMessage,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.padding(bottom = 10.dp)
+                )
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 //開始時間
                 TextField(
                     value = taskStartTime,
                     onValueChange = {},
                     label = { Text("時間") },
-                    modifier = Modifier.weight(0.4f).clickable { pickingTimeType = "start" },
+                    modifier = Modifier.weight(0.4f)
+                        .clickable {
+                            pickingTimeType = "start"
+                            viewModel.clearTaskError()
+                        },
                     enabled = false,
                     colors = TextFieldDefaults.colors(disabledTextColor = MaterialTheme.colorScheme.onSurface)
                 )
@@ -211,7 +225,11 @@ fun TaskInputSection(scheduleId: Long, viewModel: ScheduleViewModel) {
                     value = taskEndTime,
                     onValueChange = {},
                     label = { Text("終了") },
-                    modifier = Modifier.weight(0.4f).clickable { pickingTimeType = "end" },
+                    modifier = Modifier.weight(0.4f)
+                        .clickable {
+                            pickingTimeType = "end"
+                            viewModel.clearTaskError()
+                        },
                     enabled = false,
                     colors = TextFieldDefaults.colors(disabledTextColor = MaterialTheme.colorScheme.onSurface)
                 )
