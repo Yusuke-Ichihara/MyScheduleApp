@@ -37,18 +37,35 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun SchedulePagerScreen(
-    viewModel: ScheduleViewModel, onNavigateToManage: () -> Unit
+    viewModel: ScheduleViewModel,
+    onNavigateToManage: () -> Unit
 ) {
     // 1. 全スケジュールを監視
     val schedules by viewModel.allSchedules.collectAsState(initial = emptyList())
 
     // 2. Pagerの状態管理
-    val pagerState = rememberPagerState(pageCount = { schedules.size })
+    val pagerState = rememberPagerState(
+        initialPage =0,
+        pageCount = { schedules.size }
+    )
     val scope = rememberCoroutineScope()
 
     // 3. スケジュール新規作成用のダイアログ管理
     var showNewScheduleDialog by remember { mutableStateOf(false) }
     var newScheduleName by remember { mutableStateOf("") }
+
+    // 管理画面からの選択を反映させる（データ読み込み完了時も走るように schedules をキーにする）
+    LaunchedEffect(viewModel.selectedIndex, schedules) {
+        if (schedules.isNotEmpty() && viewModel.selectedIndex < schedules.size) {
+            pagerState.scrollToPage(viewModel.selectedIndex)
+        }
+    }
+    // 手動スワイプを ViewModel に反映させる
+    LaunchedEffect(pagerState.currentPage) {
+        if (schedules.isNotEmpty()) {
+            viewModel.selectSchedule(pagerState.currentPage)
+        }
+    }
 
     if (showNewScheduleDialog) {
         AlertDialog(

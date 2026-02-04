@@ -29,6 +29,8 @@ class ScheduleViewModel @Inject constructor(
     val allSchedules = scheduleRepository.allSchedules
     var taskErrorMessage by mutableStateOf<String?>(null)
         private set
+    var selectedIndex by mutableStateOf(0)
+        private set
 
     fun addSchedule(name: String) {
         viewModelScope.launch {
@@ -45,6 +47,13 @@ class ScheduleViewModel @Inject constructor(
     fun deleteSchedule(schedule: Schedule) {
         viewModelScope.launch {
             scheduleRepository.deleteSchedule(schedule)
+
+            val currentSize = scheduleRepository.allSchedules.first().size
+            if (selectedIndex >= currentSize && currentSize > 0) {
+                selectedIndex = currentSize - 1
+            } else if (currentSize == 0) {
+                selectedIndex = 0
+            }
         }
     }
 
@@ -65,7 +74,7 @@ class ScheduleViewModel @Inject constructor(
             val newStart = timeToMinutes(startTime)
             val newEnd = timeToMinutes(endTime)
 
-            // 開始が終了より後の場合は登録拒否
+            // 開始が終了より後の場合は登録拒否（開始と終了が同じ時間は許容する）
             if (newStart > newEnd) {
                 taskErrorMessage = "終了時間は開始時間より後にしてください"
                 return@launch
@@ -102,4 +111,9 @@ class ScheduleViewModel @Inject constructor(
     fun clearTaskError() {
         taskErrorMessage = null
     }
+
+    fun selectSchedule(index: Int) {
+        selectedIndex = index
+    }
+
 }
